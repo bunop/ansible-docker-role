@@ -4,6 +4,7 @@
   blockinfile:
     path: /etc/ufw/after.rules
     insertafter: EOF
+    state: absent
     block: |
       # required chains
       *filter

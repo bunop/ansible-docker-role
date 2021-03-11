@@ -35,28 +35,6 @@
 - import_tasks: docker-compose.yml
   tags: packages
 
-# https://docs.docker.com/network/iptables/#docker-on-a-router
-- name: forward traffic through docker
-  ansible.builtin.iptables:
-    chain: DOCKER-USER
-    in_interface: "{{ docker_in_interface }}"
-    out_interface: docker0
-    jump: ACCEPT
-    action: insert
-    rule_num: "1"
-
-# https://www.jeffgeerling.com/blog/2020/be-careful-docker-might-be-exposing-ports-world
-# https://docs.docker.com/network/iptables/#restrict-connections-to-the-docker-host
-- name: prevent docker exposing containers using public interface
-  ansible.builtin.iptables:
-    chain: DOCKER-USER
-    in_interface: "{{ docker_in_interface }}"
-    jump: DROP
-    # A ! argument before the address specification inverts the sense of the address.
-    source: "!127.0.0.1"
-    action: insert
-    rule_num: "2"
-
 - name: Add docker configuration file
   copy:
     src: daemon.json
