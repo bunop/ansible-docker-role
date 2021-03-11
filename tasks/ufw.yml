@@ -1,0 +1,21 @@
+
+# configure docker services
+- name: Add custom rule for UFW
+  blockinfile:
+    path: /etc/ufw/after.rules
+    insertafter: EOF
+    block: |
+      # required chains
+      *filter
+      :DOCKER-USER - [0:0]
+
+      # forward traffic within docker
+      -A DOCKER-USER -i {{ docker_in_interface }} -o docker0 -j ACCEPT
+
+      # delete all traffic from outside to docker except localhost
+      -A DOCKER-USER ! -s 127.0.0.1/32 -i {{ docker_in_interface }} -j DROP
+
+      # save those changes
+      COMMIT
+  notify: restart ufw
+  tags: configure

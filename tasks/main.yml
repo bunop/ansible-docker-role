@@ -1,2 +1,69 @@
 ---
-# tasks file for ansible-docker-role
+# https://gist.github.com/rbq/886587980894e98b23d0eee2a1d84933
+- name: Add Docker GPG key
+  apt_key: url=https://download.docker.com/linux/ubuntu/gpg
+  tags: packages
+
+- name: Add Docker APT repository
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
+  tags: packages
+
+- name: Install docker required packages
+  apt:
+    name: ['apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common']
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  tags: packages
+
+- name: Install Docker Community Edition
+  apt:
+    name: docker-ce
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  tags: packages
+
+- name: Remove Docker Compose Package
+  apt:
+    name: docker-compose
+    state: absent
+  tags: packages
+
+# install docker-compose from another role
+- import_tasks: docker-compose.yml
+  tags: packages
+
+# https://docs.docker.com/network/iptables/#docker-on-a-router
+- name: forward traffic through docker
+  ansible.builtin.iptables:
+    chain: DOCKER-USER
+    in_interface: "{{ docker_in_interface }}"
+    out_interface: docker0
+    jump: ACCEPT
+    action: insert
+    rule_num: "1"
+
+# https://www.jeffgeerling.com/blog/2020/be-careful-docker-might-be-exposing-ports-world
+# https://docs.docker.com/network/iptables/#restrict-connections-to-the-docker-host
+- name: prevent docker exposing containers using public interface
+  ansible.builtin.iptables:
+    chain: DOCKER-USER
+    in_interface: "{{ docker_in_interface }}"
+    jump: DROP
+    # A ! argument before the address specification inverts the sense of the address.
+    source: "!127.0.0.1"
+    action: insert
+    rule_num: "2"
+
+- name: Add docker configuration file
+  copy:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+  notify: restart docker
+  tags: configure
+
+- name: ensure docker started
+  service: name=docker state=started enabled=yes
+  tags: service
