@@ -1,7 +1,4 @@
 
-# prevent docker to expose containers on this interface
-docker_in_interface: "eth0"
-
 # Docker Compose options.
 docker_install_compose: true
 docker_compose_version: "1.27.4"
