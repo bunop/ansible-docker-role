@@ -32,7 +32,7 @@
   tags: packages
 
 # install docker-compose from another role
-- import_tasks: docker-compose.yml
+- import_tasks: compose.yml
   tags: packages
 
 - name: Add docker configuration file
