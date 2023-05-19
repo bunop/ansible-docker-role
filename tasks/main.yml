@@ -5,18 +5,24 @@
     id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
     state: absent
     keyring: /etc/apt/trusted.gpg
-  tags: packages
+  tags:
+    - packages
+    - docker
 
 - name: Add Docker GPG key as recommended
   apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
     keyring: /etc/apt/trusted.gpg.d/docker.gpg
-  tags: packages
+  tags:
+    - packages
+    - docker
 
 - name: Add Docker APT repository
   apt_repository:
     repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
-  tags: packages
+  tags:
+    - packages
+    - docker
 
 - name: Install docker required packages
   apt:
@@ -32,7 +38,9 @@
       - software-properties-common
       - gnupg
       - lsb-release
-  tags: packages
+  tags:
+    - packages
+    - docker
 
 - name: Install Docker Community Edition
   apt:
@@ -40,25 +48,37 @@
     state: present
     update_cache: yes
     cache_valid_time: 3600
-  tags: packages
+  tags:
+    - packages
+    - docker
 
 - name: Remove Docker Compose Package
   apt:
     name: docker-compose
     state: absent
-  tags: packages
+  tags:
+    - packages
+    - docker
+    - docker-compose
 
 # install docker-compose from another role
 - import_tasks: compose.yml
-  tags: packages
+  tags:
+    - packages
+    - docker
+    - docker-compose
 
 - name: Add docker configuration file
   copy:
     src: daemon.json
     dest: /etc/docker/daemon.json
   notify: restart docker
-  tags: configure
+  tags:
+    - configure
+    - docker
 
 - name: ensure docker started
   service: name=docker state=started enabled=yes
-  tags: service
+  tags:
+    - service
+    - docker
