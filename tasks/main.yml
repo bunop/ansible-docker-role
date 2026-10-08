@@ -25,12 +25,14 @@
     - packages
     - docker
 
+# deb822_repository does not refresh the cache: always update it (no
+# cache_valid_time), or a new repository is ignored, also when retrying
+# after a failed run
 - name: Install Docker Community Edition
   ansible.builtin.apt:
     name: "{{ docker_packages }}"
     state: present
     update_cache: true
-    cache_valid_time: 3600
   tags:
     - packages
     - docker
