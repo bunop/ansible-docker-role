@@ -1,0 +1,4 @@
+#!/bin/sh
+# managed by ansible: the standalone docker-compose binary is replaced by the
+# docker compose plugin
+exec docker compose "$@"

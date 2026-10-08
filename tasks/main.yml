@@ -1,84 +1,71 @@
 ---
-# https://gist.github.com/rbq/886587980894e98b23d0eee2a1d84933
-- name: Remove Docker GPG key from trusted.gpg
-  apt_key:
-    id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+# Docker CE from the upstream repository, with a signed-by keyring (apt-key is
+# gone since Ubuntu 24.04+)
+- name: Remove legacy Docker apt key and repository
+  ansible.builtin.file:
+    path: "{{ item }}"
     state: absent
-    keyring: /etc/apt/trusted.gpg
-  tags:
-    - packages
-    - docker
-
-- name: Add Docker GPG key as recommended
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    keyring: /etc/apt/trusted.gpg.d/docker.gpg
+  loop:
+    - /etc/apt/trusted.gpg.d/docker.gpg
+    - /etc/apt/sources.list.d/download_docker_com_linux_ubuntu.list
   tags:
     - packages
     - docker
 
 - name: Add Docker APT repository
-  apt_repository:
-    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
-  tags:
-    - packages
-    - docker
-
-- name: Install docker required packages
-  apt:
-    name: "{{ packages }}"
-    state: present
-    update_cache: yes
-    cache_valid_time: 3600
-  vars:
-    packages:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - software-properties-common
-      - gnupg
-      - lsb-release
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: https://download.docker.com/linux/ubuntu
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: stable
+    architectures: "{{ docker_apt_arch }}"
+    signed_by: https://download.docker.com/linux/ubuntu/gpg
   tags:
     - packages
     - docker
 
 - name: Install Docker Community Edition
-  apt:
-    name: docker-ce
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
     state: present
-    update_cache: yes
+    update_cache: true
     cache_valid_time: 3600
   tags:
     - packages
     - docker
 
-- name: Remove Docker Compose Package
-  apt:
-    name: docker-compose
-    state: absent
-  tags:
-    - packages
-    - docker
-    - docker-compose
-
-# install docker-compose from another role
-- import_tasks: compose.yml
+# the old standalone binary has been replaced by the compose plugin: keep the
+# `docker-compose` command as a thin wrapper
+- name: Install docker-compose wrapper for the compose plugin
+  ansible.builtin.copy:
+    src: docker-compose
+    dest: "{{ docker_compose_path }}"
+    owner: root
+    group: root
+    mode: "0755"
   tags:
     - packages
     - docker
     - docker-compose
 
 - name: Add docker configuration file
-  copy:
-    src: daemon.json
+  ansible.builtin.copy:
+    content: "{{ docker_daemon_options | to_nice_json }}\n"
     dest: /etc/docker/daemon.json
-  notify: restart docker
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart docker
   tags:
     - configure
     - docker
 
-- name: ensure docker started
-  service: name=docker state=started enabled=yes
+- name: Ensure docker is started
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
   tags:
     - service
     - docker
