@@ -1,5 +1,21 @@
+---
+docker_apt_arch: "{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"
 
-# Docker Compose options.
-docker_install_compose: true
-docker_compose_version: "v2.18.1"
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+# `docker-compose` wrapper calling `docker compose`
 docker_compose_path: /usr/local/bin/docker-compose
+
+# /etc/docker/daemon.json. Docker bypasses ufw: publish container ports on the
+# loopback by default, so that only a reverse proxy can reach them
+docker_daemon_options:
+  ip: 127.0.0.1
+  log-driver: json-file
+  log-opts:
+    max-size: 10m
+    max-file: "3"
