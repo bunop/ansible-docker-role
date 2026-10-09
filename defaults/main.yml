@@ -12,9 +12,14 @@ docker_packages:
 docker_compose_path: /usr/local/bin/docker-compose
 
 # /etc/docker/daemon.json. Docker bypasses ufw: publish container ports on the
-# loopback by default, so that only a reverse proxy can reach them
+# loopback by default, so that only a reverse proxy can reach them. `ip` covers
+# the default bridge only: user-defined networks (e.g. the compose ones) need
+# `default-network-opts`
 docker_daemon_options:
   ip: 127.0.0.1
+  default-network-opts:
+    bridge:
+      com.docker.network.bridge.host_binding_ipv4: 127.0.0.1
   log-driver: json-file
   log-opts:
     max-size: 10m
